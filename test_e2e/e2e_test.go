@@ -50,6 +50,6 @@ func iFollowUsers(users *godog.Table) error {
 	return nil
 }
 
-func follow(userID string) error {
+func follow(_ string) error {
 	return nil
 }
