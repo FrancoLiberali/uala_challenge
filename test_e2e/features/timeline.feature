@@ -8,10 +8,10 @@ Feature: Timeline
       | 2 |
       | 3 |
       | 4 |
-# And user 2 tweets "Hello i'm user 2"
-# And user 3 tweets "Hello i'm user 3"
-# And user 4 tweets "Hello i'm user 4"
-# And user 5 tweets "Hello i'm user 5"
+    And user 2 tweets "Hello i'm user 2"
+    And user 3 tweets "Hello i'm user 3"
+    And user 4 tweets "Hello i'm user 4"
+    And user 5 tweets "Hello i'm user 5"
 # When I see the timeline
 # Then I see tweets
 #   | Hello i'm user 2 |

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,13 +26,14 @@ func init() {
 func main() {
 	r := gin.Default()
 
-	r.POST("user/:followedID/follower/:followerID", follow)
+	r.POST("/user/:userID/tweet", tweet)
+	r.POST("/user/:userID/follower/:followerID", follow)
 
 	log.Fatalln(r.Run())
 }
 
 func follow(c *gin.Context) {
-	followedID, err := strconv.Atoi(c.Param("followedID"))
+	followedID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
 		returnError(c, err)
 		return
@@ -49,7 +51,34 @@ func follow(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusCreated, "OK")
+	c.String(http.StatusCreated, fmt.Sprintf("%d started to follow %d", followedID, followedID))
+}
+
+type TweetRequestBody struct {
+	Content string `json:"content"`
+}
+
+func tweet(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("userID"))
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	var requestBody TweetRequestBody
+
+	if err = c.BindJSON(&requestBody); err != nil {
+		returnError(c, err)
+		return
+	}
+
+	tweetID, err := twitterService.Tweet(uint(userID), requestBody.Content)
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	c.String(http.StatusCreated, fmt.Sprintf("%d tweet %s created", userID, tweetID))
 }
 
 func returnError(c *gin.Context, err error) {
