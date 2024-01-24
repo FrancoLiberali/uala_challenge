@@ -17,6 +17,10 @@ var (
 	ErrFollow             = errors.New("error adding follow")
 )
 
+// Follow makes user followerID to follow user followedID
+//
+// Returns ErrCantFollowYourself is followerID and followedID are equal or
+// ErrFollow if an error occurred during the execution
 func (service FollowService) Follow(followerID, followedID uint) error {
 	if followedID == followerID {
 		return ErrCantFollowYourself
