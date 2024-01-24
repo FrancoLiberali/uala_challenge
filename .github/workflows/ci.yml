@@ -1,0 +1,131 @@
+name: ci
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  check-style:
+    name: Code style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18'
+          cache: true
+      - name: lint main
+        uses: golangci/golangci-lint-action@v3
+        with:
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+      - name: lint app
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: app
+          args: --config=../.golangci.yml
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+      - name: lint test integration
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: test_integration
+          args: --config=../.golangci.yml
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+      - name: lint test e2e
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: test_e2e
+          args: --config=../.golangci.yml
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18'
+          cache: true
+      - name: Run test
+        run:  go test ./app/... -coverprofile=coverage_unit.out -v
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage_unit
+          path: coverage_unit.out
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18'
+          cache: true
+      - name: Run cache
+        run: docker compose -f "docker/docker-compose.yml" up cache -d --wait --wait-timeout 30
+      - name: Run test
+        run:  go test ./test_integration -coverpkg=./app/... -coverprofile=coverage_int.out -v
+      - uses: actions/upload-artifact@v3
+        with:
+          name: coverage_int
+          path: coverage_int.out
+
+  feature-tests:
+    name: Feature tests
+    needs: [integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18'
+          cache: true
+      - name: Run test
+        run:  make test_e2e
+
+  sonarcloud:
+    name: SonarCloud
+    needs: [check-style, unit-tests, integration-tests, feature-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Download unit line coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage_unit
+      - name: Download integration line coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage_int
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
