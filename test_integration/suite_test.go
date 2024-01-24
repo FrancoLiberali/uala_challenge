@@ -2,10 +2,13 @@ package testintegration
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/FrancoLiberali/uala_challenge/app/models"
 	"github.com/FrancoLiberali/uala_challenge/app/repository"
 	"github.com/FrancoLiberali/uala_challenge/app/service"
 )
@@ -13,7 +16,8 @@ import (
 type IntTestSuite struct {
 	suite.Suite
 	rdb           *redis.Client
-	followService *service.FollowService
+	followService *service.TwitterService
+	now           time.Time
 }
 
 func (ts *IntTestSuite) SetupTest() {
@@ -63,4 +67,22 @@ func (ts *IntTestSuite) TestFollowNotAddIfAlreadyFollower() {
 	followers, err := ts.rdb.SMembers(context.Background(), repository.UserFollowersKey(2)).Result()
 	ts.Require().NoError(err)
 	ts.Equal([]string{"1"}, followers)
+}
+
+func (ts *IntTestSuite) TestTweetCreatesTweet() {
+	tweetID, err := ts.followService.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	tweet, err := ts.rdb.Get(context.Background(), repository.TweetKey(tweetID)).Result()
+	ts.Require().NoError(err)
+
+	var tweetStruct models.Tweet
+	err = json.Unmarshal([]byte(tweet), &tweetStruct)
+	ts.Require().NoError(err)
+
+	ts.Equal(models.Tweet{
+		UserID:    1,
+		Timestamp: ts.now,
+		Content:   "aguante banfield",
+	}, tweetStruct)
 }

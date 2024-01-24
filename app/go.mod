@@ -3,6 +3,7 @@ module github.com/FrancoLiberali/uala_challenge/app
 go 1.18
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.4.0
 	github.com/stretchr/testify v1.8.4
 )

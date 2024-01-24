@@ -11,12 +11,12 @@ import (
 	"github.com/FrancoLiberali/uala_challenge/app/service"
 )
 
-var followService *service.FollowService
+var twitterService *service.TwitterService
 
 func init() {
 	var err error
 
-	followService, _, err = app.NewFollowService()
+	twitterService, _, err = app.NewService()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -43,7 +43,7 @@ func follow(c *gin.Context) {
 		return
 	}
 
-	err = followService.Follow(uint(followerID), uint(followedID))
+	err = twitterService.Follow(uint(followerID), uint(followedID))
 	if err != nil {
 		returnError(c, err)
 		return
