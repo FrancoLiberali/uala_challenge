@@ -1,6 +1,11 @@
 install_dependencies:
 	go install github.com/vektra/mockery/v2@v2.40.1
 
+lint:
+	cd app && golangci-lint run --config ../.golangci.yml
+	cd test_integration && golangci-lint run --config ../.golangci.yml
+	cd test_e2e && golangci-lint run --config ../.golangci.yml
+
 test_unit:
 	go test -v ./app/...
 
