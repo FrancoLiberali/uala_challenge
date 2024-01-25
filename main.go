@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,12 +12,12 @@ import (
 	"github.com/FrancoLiberali/uala_challenge/app/service"
 )
 
-var followService *service.FollowService
+var twitterService *service.TwitterService
 
 func init() {
 	var err error
 
-	followService, _, err = app.NewFollowService()
+	twitterService, _, err = app.NewService()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -25,13 +26,14 @@ func init() {
 func main() {
 	r := gin.Default()
 
-	r.POST("user/:followedID/follower/:followerID", follow)
+	r.POST("/user/:userID/tweet", tweet)
+	r.POST("/user/:userID/follower/:followerID", follow)
 
 	log.Fatalln(r.Run())
 }
 
 func follow(c *gin.Context) {
-	followedID, err := strconv.Atoi(c.Param("followedID"))
+	followedID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
 		returnError(c, err)
 		return
@@ -43,13 +45,40 @@ func follow(c *gin.Context) {
 		return
 	}
 
-	err = followService.Follow(uint(followerID), uint(followedID))
+	err = twitterService.Follow(uint(followerID), uint(followedID))
 	if err != nil {
 		returnError(c, err)
 		return
 	}
 
-	c.String(http.StatusCreated, "OK")
+	c.String(http.StatusCreated, fmt.Sprintf("%d started to follow %d", followedID, followedID))
+}
+
+type TweetRequestBody struct {
+	Content string `json:"content"`
+}
+
+func tweet(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("userID"))
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	var requestBody TweetRequestBody
+
+	if err = c.BindJSON(&requestBody); err != nil {
+		returnError(c, err)
+		return
+	}
+
+	tweetID, err := twitterService.Tweet(uint(userID), requestBody.Content)
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	c.String(http.StatusCreated, fmt.Sprintf("%d tweet %s created", userID, tweetID))
 }
 
 func returnError(c *gin.Context, err error) {

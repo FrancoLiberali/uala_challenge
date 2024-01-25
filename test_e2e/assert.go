@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,4 +28,10 @@ type asserter struct {
 // Errorf is used by the called assertion to report an error
 func (a *asserter) Errorf(format string, args ...interface{}) {
 	a.err = fmt.Errorf(format, args...) //nolint:goerr113 // necessary to implement assert.TestingT
+}
+
+func assertResponseCreated(resp *http.Response) error {
+	respBytes, _ := io.ReadAll(resp.Body)
+
+	return assertExpectedAndActual(assert.Equal, http.StatusCreated, resp.StatusCode, string(respBytes))
 }

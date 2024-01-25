@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,7 +12,6 @@ import (
 	"github.com/cucumber/godog/colors"
 	messages "github.com/cucumber/messages/go/v21"
 	"github.com/elliotchance/pie/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 const executorID = 1
@@ -37,6 +38,7 @@ func TestFeatures(t *testing.T) {
 
 func InitializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^I follow users$`, iFollowUsers)
+	sc.Step(`^user (\d+) tweets "([^"]*)"$`, userTweets)
 }
 
 // Takes a list of users to follow and starts to follow them
@@ -67,10 +69,29 @@ func follow(userID string) error {
 
 	defer resp.Body.Close()
 
-	err = assertExpectedAndActual(assert.Equal, http.StatusCreated, resp.StatusCode)
+	return assertResponseCreated(resp)
+}
+
+// userTweets adds a tweet to userID
+func userTweets(userID int, content string) error {
+	requestBodyMap := map[string]string{
+		"content": content,
+	}
+
+	requestBody, err := json.Marshal(requestBodyMap)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	resp, err := http.Post(
+		fmt.Sprintf("http://localhost:8080/user/%d/tweet", userID),
+		"application/json", bytes.NewBuffer(requestBody),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return assertResponseCreated(resp)
 }
