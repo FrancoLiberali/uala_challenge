@@ -12,8 +12,8 @@ Feature: Timeline
     And user 3 tweets "Hello i'm user 3"
     And user 4 tweets "Hello i'm user 4"
     And user 5 tweets "Hello i'm user 5"
-# When I see the timeline
-# Then I see tweets
-#   | Hello i'm user 2 |
-#   | Hello i'm user 3 |
-#   | Hello i'm user 4 |
+    When I see the timeline
+    Then I see tweets
+      | 4 | Hello i'm user 4 |
+      | 3 | Hello i'm user 3 |
+      | 2 | Hello i'm user 2 |

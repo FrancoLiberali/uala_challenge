@@ -15,7 +15,7 @@ test_integration:
 	go test -v ./test_integration
 
 test_e2e:
-	docker compose -f "docker/docker-compose.yml" up -d --build
+	docker compose -f "docker/docker-compose.yml" up -d --build --force-recreate --renew-anon-volumes
 	go test -v -count=1 ./test_e2e
 
 generate:

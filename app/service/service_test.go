@@ -146,6 +146,7 @@ func TestGetTimelineReturnsAListOfTweets(t *testing.T) {
 
 	id := uuid.New()
 	tweets := []models.Tweet{{UserID: 1, Content: "hola"}}
+
 	mockRepository.On("GetTimeline", uint(1)).Return([]uuid.UUID{id}, nil)
 	mockRepository.On("GetTweets", []uuid.UUID{id}).Return(tweets, nil)
 

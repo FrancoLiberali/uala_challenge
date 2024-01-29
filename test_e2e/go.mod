@@ -3,6 +3,7 @@ module github.com/FrancoLiberali/uala_challenge/test_e2e
 go 1.18
 
 require (
+	github.com/FrancoLiberali/uala_challenge/app v0.0.1
 	github.com/cucumber/godog v0.13.0
 	github.com/cucumber/messages/go/v21 v21.0.1
 	github.com/elliotchance/pie/v2 v2.8.0
@@ -21,3 +22,5 @@ require (
 	golang.org/x/exp v0.0.0-20220321173239-a90fa8a75705 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/FrancoLiberali/uala_challenge/app => ./../app

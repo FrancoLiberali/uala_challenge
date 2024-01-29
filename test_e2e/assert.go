@@ -30,8 +30,13 @@ func (a *asserter) Errorf(format string, args ...interface{}) {
 	a.err = fmt.Errorf(format, args...) //nolint:goerr113 // necessary to implement assert.TestingT
 }
 
-func assertResponseCreated(resp *http.Response) error {
-	respBytes, _ := io.ReadAll(resp.Body)
+func assertResponseStatus(resp *http.Response, status int) error {
+	err := assertExpectedAndActual(assert.Equal, status, resp.StatusCode)
+	if err != nil {
+		respBytes, _ := io.ReadAll(resp.Body)
 
-	return assertExpectedAndActual(assert.Equal, http.StatusCreated, resp.StatusCode, string(respBytes))
+		return assertExpectedAndActual(assert.Equal, status, resp.StatusCode, string(respBytes))
+	}
+
+	return nil
 }
