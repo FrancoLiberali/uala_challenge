@@ -79,7 +79,7 @@ func TestTweetReturnsErrorIfRepositoryReturnsError(t *testing.T) {
 	require.ErrorContains(t, err, "from user 1")
 }
 
-func TestTweetReturnsTweetIDIfRepositoryWorks(t *testing.T) {
+func TestTweetReturnsTweetIDIfNoFollowers(t *testing.T) {
 	mockRepository := repositoryMocks.NewIRepository(t)
 	mockClock := adaptersMocks.NewIClock(t)
 
@@ -93,6 +93,30 @@ func TestTweetReturnsTweetIDIfRepositoryWorks(t *testing.T) {
 
 	id := uuid.New()
 	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return([]uint{}, nil)
+
+	tweetID, err := followService.Tweet(1, "aguante banfield")
+	require.NoError(t, err)
+	assert.Equal(t, id, tweetID)
+}
+
+func TestTweetAddsTweetToTimelineIfFollowers(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+	mockClock := adaptersMocks.NewIClock(t)
+
+	followService := service.TwitterService{
+		Repository: mockRepository,
+		Clock:      mockClock,
+	}
+
+	now := time.Now()
+	mockClock.On("Now").Return(now)
+
+	id := uuid.New()
+	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return([]uint{2, 3}, nil)
+	mockRepository.On("AddTweetToTimeline", id, uint(2)).Return(nil)
+	mockRepository.On("AddTweetToTimeline", id, uint(3)).Return(nil)
 
 	tweetID, err := followService.Tweet(1, "aguante banfield")
 	require.NoError(t, err)

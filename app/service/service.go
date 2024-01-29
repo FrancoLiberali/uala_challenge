@@ -57,5 +57,18 @@ func (service TwitterService) Tweet(userID uint, content string) (uuid.UUID, err
 		return uuid.Nil, fmt.Errorf("%w from user %d", ErrTweet, userID)
 	}
 
+	followers, err := service.Repository.GetFollowers(userID)
+	if err != nil {
+		log.Println(err.Error())
+		return uuid.Nil, fmt.Errorf("%w from user %d", ErrTweet, userID)
+	}
+
+	for _, follower := range followers {
+		err = service.Repository.AddTweetToTimeline(tweetID, follower)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+
 	return tweetID, nil
 }
