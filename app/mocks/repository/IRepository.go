@@ -32,6 +32,24 @@ func (_m *IRepository) AddFollower(userID uint, newFollowerID uint) error {
 	return r0
 }
 
+// AddTweetToTimeline provides a mock function with given fields: tweetID, userID
+func (_m *IRepository) AddTweetToTimeline(tweetID uuid.UUID, userID uint) error {
+	ret := _m.Called(tweetID, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddTweetToTimeline")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, uint) error); ok {
+		r0 = rf(tweetID, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // CreateTweet provides a mock function with given fields: tweet
 func (_m *IRepository) CreateTweet(tweet models.Tweet) (uuid.UUID, error) {
 	ret := _m.Called(tweet)
@@ -55,6 +73,96 @@ func (_m *IRepository) CreateTweet(tweet models.Tweet) (uuid.UUID, error) {
 
 	if rf, ok := ret.Get(1).(func(models.Tweet) error); ok {
 		r1 = rf(tweet)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetFollowers provides a mock function with given fields: userID
+func (_m *IRepository) GetFollowers(userID uint) ([]uint, error) {
+	ret := _m.Called(userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFollowers")
+	}
+
+	var r0 []uint
+	var r1 error
+	if rf, ok := ret.Get(0).(func(uint) ([]uint, error)); ok {
+		return rf(userID)
+	}
+	if rf, ok := ret.Get(0).(func(uint) []uint); ok {
+		r0 = rf(userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]uint)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(uint) error); ok {
+		r1 = rf(userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTimeline provides a mock function with given fields: userID
+func (_m *IRepository) GetTimeline(userID uint) ([]uuid.UUID, error) {
+	ret := _m.Called(userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTimeline")
+	}
+
+	var r0 []uuid.UUID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(uint) ([]uuid.UUID, error)); ok {
+		return rf(userID)
+	}
+	if rf, ok := ret.Get(0).(func(uint) []uuid.UUID); ok {
+		r0 = rf(userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(uint) error); ok {
+		r1 = rf(userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTweets provides a mock function with given fields: ids
+func (_m *IRepository) GetTweets(ids []uuid.UUID) ([]models.Tweet, error) {
+	ret := _m.Called(ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTweets")
+	}
+
+	var r0 []models.Tweet
+	var r1 error
+	if rf, ok := ret.Get(0).(func([]uuid.UUID) ([]models.Tweet, error)); ok {
+		return rf(ids)
+	}
+	if rf, ok := ret.Get(0).(func([]uuid.UUID) []models.Tweet); ok {
+		r0 = rf(ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.Tweet)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func([]uuid.UUID) error); ok {
+		r1 = rf(ids)
 	} else {
 		r1 = ret.Error(1)
 	}

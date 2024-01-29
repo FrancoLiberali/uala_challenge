@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,8 +17,16 @@ import (
 type IRepository interface {
 	// AddFollower adds newFollowerID to the list of followers of userID
 	AddFollower(userID, newFollowerID uint) error
+	// GetFollowers returns the list of followers of user userID
+	GetFollowers(userID uint) ([]uint, error)
 	// CreateTweet creates a tweet returning its id
 	CreateTweet(tweet models.Tweet) (uuid.UUID, error)
+	// GetTweets returns a list of tweets by their ids
+	GetTweets(ids []uuid.UUID) ([]models.Tweet, error)
+	// AddTweetToTimeline adds a tweetID to the user's timeline, maintaining a maximin length of 40 tweets
+	AddTweetToTimeline(tweetID uuid.UUID, userID uint) error
+	// GetTimeline returns the list of tweets ids in a user timeline
+	GetTimeline(userID uint) ([]uuid.UUID, error)
 }
 
 type Repository struct {
@@ -23,8 +34,9 @@ type Repository struct {
 }
 
 const (
-	Forever  = 0 // Forever indicates an infinite TTL
-	TweetTTL = 2 * time.Hour
+	Forever             = 0 // Forever indicates an infinite TTL
+	TweetTTL            = 2 * time.Hour
+	MaxTweetsInTimeline = 40
 )
 
 // AddFollower adds newFollowerID to the list of followers of userID
@@ -32,6 +44,29 @@ func (repository Repository) AddFollower(userID, newFollowerID uint) error {
 	followersKey := UserFollowersKey(userID)
 
 	return repository.RDB.SAdd(context.Background(), followersKey, newFollowerID).Err()
+}
+
+// GetFollowers returns the list of followers of user userID
+func (repository Repository) GetFollowers(userID uint) ([]uint, error) {
+	followersKey := UserFollowersKey(userID)
+
+	idsString, err := repository.RDB.SMembers(context.Background(), followersKey).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uint, 0, len(idsString))
+
+	for _, idString := range idsString {
+		id, err := strconv.Atoi(idString)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, uint(id))
+	}
+
+	return ids, nil
 }
 
 // UserFollowersKey returns the key that stores the list of followers of userID in the cache
@@ -47,7 +82,82 @@ func (repository Repository) CreateTweet(tweet models.Tweet) (uuid.UUID, error) 
 	return tweetID, repository.RDB.Set(context.Background(), tweetKey, tweet, TweetTTL).Err()
 }
 
+// GetTweets returns a list of tweets by their ids
+func (repository Repository) GetTweets(ids []uuid.UUID) ([]models.Tweet, error) {
+	tweets := make([]models.Tweet, 0, len(ids))
+
+	for _, id := range ids {
+		tweetKey := TweetKey(id)
+
+		tweetString, err := repository.RDB.Get(context.Background(), tweetKey).Result()
+		if errors.Is(err, redis.Nil) {
+			// nil error obtained -> ttl reached -> should look in database
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		tweet := models.Tweet{}
+
+		err = json.Unmarshal([]byte(tweetString), &tweet)
+		if err != nil {
+			return nil, err
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	return tweets, nil
+}
+
 // TweetKey returns the key that stores a tweet by id
 func TweetKey(tweetID uuid.UUID) string {
 	return fmt.Sprintf("tweet-%s", tweetID)
+}
+
+// AddTweetToTimeline adds a tweetID to the user's timeline, maintaining a maximin length of 40 tweets
+func (repository Repository) AddTweetToTimeline(tweetID uuid.UUID, userID uint) error {
+	timelineKey := TimelineKey(userID)
+
+	timelineLen, err := repository.RDB.LLen(context.Background(), timelineKey).Result()
+	if err != nil {
+		return err
+	}
+
+	if timelineLen == MaxTweetsInTimeline {
+		err := repository.RDB.RPop(context.Background(), timelineKey).Err()
+		if err != nil {
+			return err
+		}
+	}
+
+	return repository.RDB.LPush(context.Background(), timelineKey, tweetID.String()).Err()
+}
+
+// GetTimeline returns the list of tweets ids in a user timeline
+func (repository Repository) GetTimeline(userID uint) ([]uuid.UUID, error) {
+	timelineKey := TimelineKey(userID)
+
+	idsString, err := repository.RDB.LRange(context.Background(), timelineKey, 0, -1).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uuid.UUID, 0, len(idsString))
+
+	for _, idString := range idsString {
+		id, err := uuid.Parse(idString)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
+
+// TimelineKey returns the key that stores an user's timeline
+func TimelineKey(userID uint) string {
+	return fmt.Sprintf("tl-%d", userID)
 }

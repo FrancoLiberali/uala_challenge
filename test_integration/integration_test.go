@@ -21,7 +21,7 @@ func TestMain(t *testing.T) {
 	t.Setenv(app.CacheURLEnvVar, host)
 	t.Setenv(app.CachePasswordEnvVar, password)
 
-	followService, rdb, err := app.NewService()
+	service, rdb, err := app.NewService()
 	require.NoError(t, err)
 
 	// mock time
@@ -37,7 +37,7 @@ func TestMain(t *testing.T) {
 
 	mockClock.On("Now").Return(nowDecoded).Maybe()
 
-	followService.Clock = mockClock
+	service.Clock = mockClock
 
-	suite.Run(t, &IntTestSuite{rdb: rdb, followService: followService, now: nowDecoded})
+	suite.Run(t, &IntTestSuite{rdb: rdb, service: service, now: nowDecoded})
 }

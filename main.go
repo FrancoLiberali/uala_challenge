@@ -28,6 +28,7 @@ func main() {
 
 	r.POST("/user/:userID/tweet", tweet)
 	r.POST("/user/:userID/follower/:followerID", follow)
+	r.GET("/user/:userID/timeline", timeline)
 
 	log.Fatalln(r.Run())
 }
@@ -79,6 +80,22 @@ func tweet(c *gin.Context) {
 	}
 
 	c.String(http.StatusCreated, fmt.Sprintf("%d tweet %s created", userID, tweetID))
+}
+
+func timeline(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("userID"))
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	timeline, err := twitterService.GetTimeline(uint(userID))
+	if err != nil {
+		returnError(c, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, timeline)
 }
 
 func returnError(c *gin.Context, err error) {

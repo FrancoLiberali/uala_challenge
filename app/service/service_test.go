@@ -60,7 +60,7 @@ func TestTweetReturnsErrorIfContentLenIfBiggerThan280Characters(t *testing.T) {
 	require.ErrorIs(t, err, models.ErrTweetTooLong)
 }
 
-func TestTweetReturnsErrorIfRepositoryReturnsError(t *testing.T) {
+func TestTweetReturnsErrorIfRepositoryCreateTweetReturnsError(t *testing.T) {
 	mockRepository := repositoryMocks.NewIRepository(t)
 	mockClock := adaptersMocks.NewIClock(t)
 
@@ -79,7 +79,7 @@ func TestTweetReturnsErrorIfRepositoryReturnsError(t *testing.T) {
 	require.ErrorContains(t, err, "from user 1")
 }
 
-func TestTweetReturnsTweetIDIfRepositoryWorks(t *testing.T) {
+func TestTweetReturnsErrorIfRepositoryGetFollowersReturnsError(t *testing.T) {
 	mockRepository := repositoryMocks.NewIRepository(t)
 	mockClock := adaptersMocks.NewIClock(t)
 
@@ -93,8 +93,108 @@ func TestTweetReturnsTweetIDIfRepositoryWorks(t *testing.T) {
 
 	id := uuid.New()
 	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return(nil, errors.New("an error"))
+
+	_, err := followService.Tweet(1, "aguante banfield")
+	require.ErrorIs(t, err, service.ErrTweet)
+	require.ErrorContains(t, err, "from user 1")
+}
+
+func TestTweetDoesNotReturnErrorIfRepositoryAddToTimelineReturnsError(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+	mockClock := adaptersMocks.NewIClock(t)
+
+	followService := service.TwitterService{
+		Repository: mockRepository,
+		Clock:      mockClock,
+	}
+
+	now := time.Now()
+	mockClock.On("Now").Return(now)
+
+	id := uuid.New()
+	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return([]uint{2, 3}, nil)
+	mockRepository.On("AddTweetToTimeline", id, uint(2)).Return(errors.New("an error"))
+	mockRepository.On("AddTweetToTimeline", id, uint(3)).Return(nil)
 
 	tweetID, err := followService.Tweet(1, "aguante banfield")
 	require.NoError(t, err)
 	assert.Equal(t, id, tweetID)
+}
+
+func TestTweetReturnsTweetIDIfNoFollowers(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+	mockClock := adaptersMocks.NewIClock(t)
+
+	followService := service.TwitterService{
+		Repository: mockRepository,
+		Clock:      mockClock,
+	}
+
+	now := time.Now()
+	mockClock.On("Now").Return(now)
+
+	id := uuid.New()
+	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return([]uint{}, nil)
+
+	tweetID, err := followService.Tweet(1, "aguante banfield")
+	require.NoError(t, err)
+	assert.Equal(t, id, tweetID)
+}
+
+func TestTweetAddsTweetToTimelineIfFollowers(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+	mockClock := adaptersMocks.NewIClock(t)
+
+	followService := service.TwitterService{
+		Repository: mockRepository,
+		Clock:      mockClock,
+	}
+
+	now := time.Now()
+	mockClock.On("Now").Return(now)
+
+	id := uuid.New()
+	mockRepository.On("CreateTweet", models.Tweet{UserID: 1, Timestamp: now, Content: "aguante banfield"}).Return(id, nil)
+	mockRepository.On("GetFollowers", uint(1)).Return([]uint{2, 3}, nil)
+	mockRepository.On("AddTweetToTimeline", id, uint(2)).Return(nil)
+	mockRepository.On("AddTweetToTimeline", id, uint(3)).Return(nil)
+
+	tweetID, err := followService.Tweet(1, "aguante banfield")
+	require.NoError(t, err)
+	assert.Equal(t, id, tweetID)
+}
+
+func TestGetTimelineReturnsErrorIfRepositoryReturnsError(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+
+	twService := service.TwitterService{
+		Repository: mockRepository,
+	}
+
+	mockRepository.On("GetTimeline", uint(1)).Return(nil, errors.New("an error"))
+
+	_, err := twService.GetTimeline(1)
+	require.ErrorIs(t, err, service.ErrTimeline)
+	require.ErrorContains(t, err, "of user 1")
+}
+
+func TestGetTimelineReturnsAListOfTweets(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+
+	twService := service.TwitterService{
+		Repository: mockRepository,
+	}
+
+	id := uuid.New()
+	tweets := []models.Tweet{{UserID: 1, Content: "hola"}}
+
+	mockRepository.On("GetTimeline", uint(1)).Return([]uuid.UUID{id}, nil)
+	mockRepository.On("GetTweets", []uuid.UUID{id}).Return(tweets, nil)
+
+	tweetsReturned, err := twService.GetTimeline(1)
+	require.NoError(t, err)
+	assert.Equal(t, tweets, tweetsReturned)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
 
@@ -15,9 +16,9 @@ import (
 
 type IntTestSuite struct {
 	suite.Suite
-	rdb           *redis.Client
-	followService *service.TwitterService
-	now           time.Time
+	rdb     *redis.Client
+	service *service.TwitterService
+	now     time.Time
 }
 
 func (ts *IntTestSuite) SetupTest() {
@@ -25,7 +26,7 @@ func (ts *IntTestSuite) SetupTest() {
 }
 
 func (ts *IntTestSuite) TestFollowCreatesSetIfIsTheFirstFollower() {
-	err := ts.followService.Follow(1, 2)
+	err := ts.service.Follow(1, 2)
 	ts.Require().NoError(err)
 
 	followersLen, err := ts.rdb.SCard(context.Background(), repository.UserFollowersKey(2)).Result()
@@ -38,10 +39,10 @@ func (ts *IntTestSuite) TestFollowCreatesSetIfIsTheFirstFollower() {
 }
 
 func (ts *IntTestSuite) TestFollowAddsToSetIfAlreadyExists() {
-	err := ts.followService.Follow(1, 2)
+	err := ts.service.Follow(1, 2)
 	ts.Require().NoError(err)
 
-	err = ts.followService.Follow(3, 2)
+	err = ts.service.Follow(3, 2)
 	ts.Require().NoError(err)
 
 	followersLen, err := ts.rdb.SCard(context.Background(), repository.UserFollowersKey(2)).Result()
@@ -54,10 +55,10 @@ func (ts *IntTestSuite) TestFollowAddsToSetIfAlreadyExists() {
 }
 
 func (ts *IntTestSuite) TestFollowNotAddIfAlreadyFollower() {
-	err := ts.followService.Follow(1, 2)
+	err := ts.service.Follow(1, 2)
 	ts.Require().NoError(err)
 
-	err = ts.followService.Follow(1, 2)
+	err = ts.service.Follow(1, 2)
 	ts.Require().NoError(err)
 
 	followersLen, err := ts.rdb.SCard(context.Background(), repository.UserFollowersKey(2)).Result()
@@ -69,8 +70,8 @@ func (ts *IntTestSuite) TestFollowNotAddIfAlreadyFollower() {
 	ts.Equal([]string{"1"}, followers)
 }
 
-func (ts *IntTestSuite) TestTweetCreatesTweet() {
-	tweetID, err := ts.followService.Tweet(1, "aguante banfield")
+func (ts *IntTestSuite) TestTweetCreatesTweetNoFollowers() {
+	tweetID, err := ts.service.Tweet(1, "aguante banfield")
 	ts.Require().NoError(err)
 
 	tweet, err := ts.rdb.Get(context.Background(), repository.TweetKey(tweetID)).Result()
@@ -85,4 +86,113 @@ func (ts *IntTestSuite) TestTweetCreatesTweet() {
 		Timestamp: ts.now,
 		Content:   "aguante banfield",
 	}, tweetStruct)
+}
+
+func (ts *IntTestSuite) TestTweetCreatesTweetWithFollowersAddsToTimelines() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	tweetID, err := ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.Repository.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]uuid.UUID{tweetID}, timeline2)
+
+	timeline3, err := ts.service.Repository.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]uuid.UUID{tweetID}, timeline3)
+}
+
+func (ts *IntTestSuite) TestMultipleTweetWithFollowersAddsToTimelines() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 2)
+	ts.Require().NoError(err)
+
+	tweet1ID, err := ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	tweet2ID, err := ts.service.Tweet(2, "aguante banfield")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.Repository.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]uuid.UUID{tweet1ID}, timeline2)
+
+	timeline3, err := ts.service.Repository.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]uuid.UUID{tweet2ID, tweet1ID}, timeline3)
+}
+
+func (ts *IntTestSuite) TestTweetDeletesFromTimelineIfMaxReached() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	tweetID, err := ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	for i := 0; i <= repository.MaxTweetsInTimeline; i++ {
+		_, err = ts.service.Tweet(1, "aguante banfield")
+		ts.Require().NoError(err)
+	}
+
+	timeline2, err := ts.service.Repository.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Len(timeline2, repository.MaxTweetsInTimeline)
+	ts.NotContains(timeline2, tweetID)
+}
+
+func (ts *IntTestSuite) TestGetTimelineOneTweet() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield"}}, timeline2)
+
+	timeline3, err := ts.service.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield"}}, timeline3)
+}
+
+func (ts *IntTestSuite) TestGetTimelineMultipleTweetWithFollowers() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 2)
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(1, "aguante banfield 1")
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(2, "aguante banfield 2")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield 1"}}, timeline2)
+
+	timeline3, err := ts.service.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{
+		{UserID: 2, Timestamp: ts.now, Content: "aguante banfield 2"},
+		{UserID: 1, Timestamp: ts.now, Content: "aguante banfield 1"},
+	}, timeline3)
 }
