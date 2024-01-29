@@ -21,6 +21,7 @@ var (
 	ErrCantFollowYourself = errors.New("follow yourself not allowed")
 	ErrFollow             = errors.New("error adding follow")
 	ErrTweet              = errors.New("error tweeting")
+	ErrTimeline           = errors.New("error getting timeline")
 )
 
 // Follow makes user followerID to follow user followedID
@@ -71,4 +72,17 @@ func (service TwitterService) Tweet(userID uint, content string) (uuid.UUID, err
 	}
 
 	return tweetID, nil
+}
+
+// GetTimeline returns the list of tweets in a user timeline
+//
+// Returns ErrTimeline if an error occurred during the execution
+func (service TwitterService) GetTimeline(userID uint) ([]models.Tweet, error) {
+	tweetsIDs, err := service.Repository.GetTimeline(userID)
+	if err != nil {
+		log.Println(err.Error())
+		return nil, fmt.Errorf("%w of user %d", ErrTimeline, userID)
+	}
+
+	return service.Repository.GetTweets(tweetsIDs)
 }

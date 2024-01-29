@@ -122,3 +122,34 @@ func TestTweetAddsTweetToTimelineIfFollowers(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, id, tweetID)
 }
+
+func TestGetTimelineReturnsErrorIfRepositoryReturnsError(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+
+	twService := service.TwitterService{
+		Repository: mockRepository,
+	}
+
+	mockRepository.On("GetTimeline", uint(1)).Return(nil, errors.New("an error"))
+
+	_, err := twService.GetTimeline(1)
+	require.ErrorIs(t, err, service.ErrTimeline)
+	require.ErrorContains(t, err, "of user 1")
+}
+
+func TestGetTimelineReturnsAListOfTweets(t *testing.T) {
+	mockRepository := repositoryMocks.NewIRepository(t)
+
+	twService := service.TwitterService{
+		Repository: mockRepository,
+	}
+
+	id := uuid.New()
+	tweets := []models.Tweet{{UserID: 1, Content: "hola"}}
+	mockRepository.On("GetTimeline", uint(1)).Return([]uuid.UUID{id}, nil)
+	mockRepository.On("GetTweets", []uuid.UUID{id}).Return(tweets, nil)
+
+	tweetsReturned, err := twService.GetTimeline(1)
+	require.NoError(t, err)
+	assert.Equal(t, tweets, tweetsReturned)
+}

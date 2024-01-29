@@ -140,6 +140,36 @@ func (_m *IRepository) GetTimeline(userID uint) ([]uuid.UUID, error) {
 	return r0, r1
 }
 
+// GetTweets provides a mock function with given fields: ids
+func (_m *IRepository) GetTweets(ids []uuid.UUID) ([]models.Tweet, error) {
+	ret := _m.Called(ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTweets")
+	}
+
+	var r0 []models.Tweet
+	var r1 error
+	if rf, ok := ret.Get(0).(func([]uuid.UUID) ([]models.Tweet, error)); ok {
+		return rf(ids)
+	}
+	if rf, ok := ret.Get(0).(func([]uuid.UUID) []models.Tweet); ok {
+		r0 = rf(ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.Tweet)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func([]uuid.UUID) error); ok {
+		r1 = rf(ids)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewIRepository creates a new instance of IRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewIRepository(t interface {

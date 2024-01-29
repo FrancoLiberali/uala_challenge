@@ -149,3 +149,50 @@ func (ts *IntTestSuite) TestTweetDeletesFromTimelineIfMaxReached() {
 	ts.Len(timeline2, repository.MaxTweetsInTimeline)
 	ts.NotContains(timeline2, tweetID)
 }
+
+func (ts *IntTestSuite) TestGetTimelineOneTweet() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield"}}, timeline2)
+
+	timeline3, err := ts.service.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield"}}, timeline3)
+}
+
+func (ts *IntTestSuite) TestGetTimelineMultipleTweetWithFollowers() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 1)
+	ts.Require().NoError(err)
+
+	err = ts.service.Follow(3, 2)
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(1, "aguante banfield 1")
+	ts.Require().NoError(err)
+
+	_, err = ts.service.Tweet(2, "aguante banfield 2")
+	ts.Require().NoError(err)
+
+	timeline2, err := ts.service.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{{UserID: 1, Timestamp: ts.now, Content: "aguante banfield 1"}}, timeline2)
+
+	timeline3, err := ts.service.GetTimeline(3)
+	ts.Require().NoError(err)
+	ts.Equal([]models.Tweet{
+		{UserID: 2, Timestamp: ts.now, Content: "aguante banfield 2"},
+		{UserID: 1, Timestamp: ts.now, Content: "aguante banfield 1"},
+	}, timeline3)
+}

@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -19,6 +21,8 @@ type IRepository interface {
 	GetFollowers(userID uint) ([]uint, error)
 	// CreateTweet creates a tweet returning its id
 	CreateTweet(tweet models.Tweet) (uuid.UUID, error)
+	// GetTweets returns a list of tweets by their ids
+	GetTweets(ids []uuid.UUID) ([]models.Tweet, error)
 	// AddTweetToTimeline adds a tweetID to the user's timeline, maintaining a maximin length of 40 tweets
 	AddTweetToTimeline(tweetID uuid.UUID, userID uint) error
 	// GetTimeline returns the list of tweets ids in a user timeline
@@ -76,6 +80,34 @@ func (repository Repository) CreateTweet(tweet models.Tweet) (uuid.UUID, error) 
 	tweetKey := TweetKey(tweetID)
 
 	return tweetID, repository.RDB.Set(context.Background(), tweetKey, tweet, TweetTTL).Err()
+}
+
+// GetTweets returns a list of tweets by their ids
+func (repository Repository) GetTweets(ids []uuid.UUID) ([]models.Tweet, error) {
+	tweets := make([]models.Tweet, 0, len(ids))
+
+	for _, id := range ids {
+		tweetKey := TweetKey(id)
+
+		tweetString, err := repository.RDB.Get(context.Background(), tweetKey).Result()
+		if errors.Is(err, redis.Nil) {
+			// nil error obtained -> ttl reached -> should look in database
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		tweet := models.Tweet{}
+
+		err = json.Unmarshal([]byte(tweetString), &tweet)
+		if err != nil {
+			return nil, err
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	return tweets, nil
 }
 
 // TweetKey returns the key that stores a tweet by id
