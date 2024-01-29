@@ -131,3 +131,21 @@ func (ts *IntTestSuite) TestMultipleTweetWithFollowersAddsToTimelines() {
 	ts.Require().NoError(err)
 	ts.Equal([]uuid.UUID{tweet2ID, tweet1ID}, timeline3)
 }
+
+func (ts *IntTestSuite) TestTweetDeletesFromTimelineIfMaxReached() {
+	err := ts.service.Follow(2, 1)
+	ts.Require().NoError(err)
+
+	tweetID, err := ts.service.Tweet(1, "aguante banfield")
+	ts.Require().NoError(err)
+
+	for i := 0; i <= repository.MaxTweetsInTimeline; i++ {
+		_, err = ts.service.Tweet(1, "aguante banfield")
+		ts.Require().NoError(err)
+	}
+
+	timeline2, err := ts.service.Repository.GetTimeline(2)
+	ts.Require().NoError(err)
+	ts.Len(timeline2, repository.MaxTweetsInTimeline)
+	ts.NotContains(timeline2, tweetID)
+}
