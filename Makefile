@@ -21,5 +21,10 @@ test_e2e:
 generate:
 	cd app && go generate ./...
 
+aws_build:
+	cd aws_lambda && GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap follow/main.go && zip uala-challenge-follow.zip bootstrap
+	cd aws_lambda && GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap tweet/main.go && zip uala-challenge-tweet.zip bootstrap
+	cd aws_lambda && GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap timeline/main.go && zip uala-challenge-timeline.zip bootstrap
+
 .PHONY: test_integration test_e2e
 

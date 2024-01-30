@@ -21,3 +21,6 @@
 # go.work
 
 .vscode
+
+aws_lambda/bootstrap
+aws_lambda/uala-challenge-*.zip

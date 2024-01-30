@@ -5,4 +5,5 @@ use (
 	./test_e2e
 	./test_integration
 	.
+	./aws_lambda
 )
