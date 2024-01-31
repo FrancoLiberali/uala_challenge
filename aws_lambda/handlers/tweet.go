@@ -18,14 +18,14 @@ func HandleTweet(_ context.Context, event *events.APIGatewayV2HTTPRequest) (*eve
 		return nil, ErrNilEvent
 	}
 
-	body := map[string]string{}
-
-	err := json.Unmarshal([]byte(event.Body), &body)
+	userID, err := getUserID(event, userIDJSONKey)
 	if err != nil {
 		return nil, err
 	}
 
-	userID, err := getUserID(body, userIDJSONKey)
+	body := map[string]string{}
+
+	err = json.Unmarshal([]byte(event.Body), &body)
 	if err != nil {
 		return nil, err
 	}

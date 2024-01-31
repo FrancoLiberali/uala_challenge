@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -19,19 +18,12 @@ func HandleFollow(_ context.Context, event *events.APIGatewayV2HTTPRequest) (*ev
 		return nil, ErrNilEvent
 	}
 
-	body := map[string]string{}
-
-	err := json.Unmarshal([]byte(event.Body), &body)
+	followedID, err := getUserID(event, userIDJSONKey)
 	if err != nil {
 		return nil, err
 	}
 
-	followedID, err := getUserID(body, userIDJSONKey)
-	if err != nil {
-		return nil, err
-	}
-
-	followerID, err := getUserID(body, followerIDJSONKey)
+	followerID, err := getUserID(event, followerIDJSONKey)
 	if err != nil {
 		return nil, err
 	}
@@ -47,15 +39,15 @@ func HandleFollow(_ context.Context, event *events.APIGatewayV2HTTPRequest) (*ev
 	}, nil
 }
 
-func getUserID(body map[string]string, jsonKey string) (uint, error) {
-	userIDString, isPresent := body[jsonKey]
+func getUserID(event *events.APIGatewayV2HTTPRequest, paramKey string) (uint, error) {
+	userIDString, isPresent := event.PathParameters[paramKey]
 	if !isPresent {
-		return 0, badRequest(jsonKey)
+		return 0, badRequest(paramKey)
 	}
 
 	userID, err := strconv.Atoi(userIDString)
 	if err != nil {
-		return 0, badRequest(jsonKey)
+		return 0, badRequest(paramKey)
 	}
 
 	return uint(userID), nil
