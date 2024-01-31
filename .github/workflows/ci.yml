@@ -54,6 +54,14 @@ jobs:
           skip-cache: true
           skip-pkg-cache: true
           skip-build-cache: true
+      - name: lint aws lambda
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: aws_lambda
+          args: --config=../.golangci.yml
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
 
   unit-tests:
     name: Unit tests

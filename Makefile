@@ -6,6 +6,7 @@ lint:
 	cd app && golangci-lint run --config ../.golangci.yml
 	cd test_integration && golangci-lint run --config ../.golangci.yml
 	cd test_e2e && golangci-lint run --config ../.golangci.yml
+	cd aws_lambda && golangci-lint run --config ../.golangci.yml
 
 test_unit:
 	go test -v ./app/...

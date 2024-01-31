@@ -35,7 +35,7 @@ func HandleTweet(_ context.Context, event *events.APIGatewayV2HTTPRequest) (*eve
 		return nil, badRequest(contentJSONKey)
 	}
 
-	tweetID, err := twService.Tweet(uint(userID), content)
+	tweetID, err := twService.Tweet(userID, content)
 	if err != nil {
 		return nil, err
 	}
