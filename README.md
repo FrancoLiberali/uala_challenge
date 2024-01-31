@@ -26,6 +26,8 @@ Consulta el timeline:
 curl https://x7vywn4yub.execute-api.us-east-2.amazonaws.com/prod/user/2/timeline
 ```
 
+Para más información sobre los endpoints disponibles mira [api docs](#api-docs).
+
 ### Local
 
 La misma demo puede ser ejecutada en la version local de la solución:
@@ -53,3 +55,15 @@ Consulta el timeline:
 ```bash
 curl localhost:8080/user/2/timeline
 ```
+
+## Api docs
+
+La documentación de los endpoints disponibles se encuentra en el documento `swagger.json`. Puedes verlo de forma sencilla utilizando swagger-ui:
+
+Corre el servidor web:
+
+```bash
+docker run -p 8081:8080 -e SWAGGER_JSON=/swagger.json -v ./swagger.json:/swagger.json swaggerapi/swagger-ui
+```
+
+Ingresa a [localhost:8081](localhost:8081) desde tu navegador.

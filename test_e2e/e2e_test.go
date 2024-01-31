@@ -79,7 +79,7 @@ func follow(userID string) error {
 
 	defer resp.Body.Close()
 
-	return assertResponseStatus(resp, http.StatusCreated)
+	return assertResponseStatus(resp, http.StatusOK)
 }
 
 // userTweets adds a tweet to userID

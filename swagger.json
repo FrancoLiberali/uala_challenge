@@ -1,0 +1,95 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "text/plain",
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "This the swagger documentation for the API of the Ualá challenge developed by Franco Liberali.\nCheck our project here: https://github.com/FrancoLiberali/uala_challenge",
+    "title": "Ualá challenge Twitter API",
+    "contact": {
+      "name": "Franco Liberali",
+      "url": "https://github.com/FrancoLiberali",
+      "email": "franco.liberali@gmail.com"
+    },
+    "version": "1.0"
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "paths": {
+    "/user/{userID}/follower/{followerID}": {
+      "post": {
+        "description": "Start following an user",
+        "produces": [
+          "text/plain"
+        ],
+        "operationId": "Follow",
+        "parameters": [
+          {
+            "type": "uint",
+            "description": "The id of the user to be followed",
+            "name": "userID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "uint",
+            "description": "The id of the user that starts to follow userID",
+            "name": "followerID",
+            "in": "path",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/user/{userID}/timeline": {
+      "get": {
+        "description": "Get the user's timelines",
+        "produces": [
+          "application/json"
+        ],
+        "operationId": "Timeline",
+        "parameters": [
+          {
+            "type": "uint",
+            "description": "The id of the user that is owner of the timeline",
+            "name": "userID",
+            "in": "path",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/user/{userID}/tweet": {
+      "post": {
+        "produces": [
+          "text/plain"
+        ],
+        "summary": "Creates a tweet.",
+        "operationId": "Tweet",
+        "parameters": [
+          {
+            "type": "uint",
+            "description": "The id of the author of the tweet",
+            "name": "userID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Content of the tweet",
+            "name": "content",
+            "in": "body",
+            "required": true
+          }
+        ]
+      }
+    }
+  }
+}
