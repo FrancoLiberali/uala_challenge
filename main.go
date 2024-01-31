@@ -52,7 +52,7 @@ func follow(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusCreated, fmt.Sprintf("%d started to follow %d", followedID, followedID))
+	c.String(http.StatusCreated, fmt.Sprintf("%d started to follow %d", followerID, followedID))
 }
 
 type TweetRequestBody struct {
