@@ -1,0 +1,2 @@
+- Es suficiente con que el timeline aparezcan tweets nuevos a partir de que seguimos a un usuario (y no sus tweets anteriores)
+- El timeline se encuentra limitado a 40 tweets, sin paginación

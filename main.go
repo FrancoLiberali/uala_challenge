@@ -1,3 +1,22 @@
+// Ualá challenge Twitter API
+//
+// This the swagger documentation for the API of the Ualá challenge developed by Franco Liberali.
+// Check our project here: https://github.com/FrancoLiberali/uala_challenge
+//
+//	Schemes: http
+//	Host: localhost:8080
+//	BasePath: /
+//	Version: 1.0
+//	Contact: Franco Liberali <franco.liberali@gmail.com> https://github.com/FrancoLiberali
+//
+//	Consumes:
+//	- application/json
+//
+//	Produces:
+//	- text/plain
+//	- application/json
+//
+// swagger:meta
 package main
 
 import (
@@ -11,6 +30,8 @@ import (
 	"github.com/FrancoLiberali/uala_challenge/app"
 	"github.com/FrancoLiberali/uala_challenge/app/service"
 )
+
+//go:generate swagger generate spec -o ./swagger.json
 
 var twitterService *service.TwitterService
 
@@ -33,6 +54,27 @@ func main() {
 	log.Fatalln(r.Run())
 }
 
+// swagger:operation POST /user/{userID}/follower/{followerID} Follow
+// Start following an user
+// ---
+// produces:
+// - text/plain
+// parameters:
+//   - name: userID
+//     in: path
+//     description: The id of the user to be followed
+//     required: true
+//     type: uint
+//   - name: followerID
+//     in: path
+//     description: The id of the user that starts to follow userID
+//     required: true
+//     type: uint
+//
+// responses:
+//
+//	'200':
+//	    description: 'Correctly followed'
 func follow(c *gin.Context) {
 	followedID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
@@ -52,13 +94,34 @@ func follow(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusCreated, fmt.Sprintf("%d started to follow %d", followedID, followedID))
+	c.String(http.StatusOK, fmt.Sprintf("%d started to follow %d", followerID, followedID))
 }
 
 type TweetRequestBody struct {
 	Content string `json:"content"`
 }
 
+// swagger:operation POST /user/{userID}/tweet Tweet
+// Creates a tweet.
+// ---
+// produces:
+// - text/plain
+// parameters:
+//   - name: userID
+//     in: path
+//     description: The id of the author of the tweet
+//     required: true
+//     type: uint
+//   - name: content
+//     in: body
+//     description: Content of the tweet
+//     required: true
+//     type: string
+//
+// responses:
+//
+//	'201':
+//	    description: 'Tweet created'
 func tweet(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
@@ -82,6 +145,22 @@ func tweet(c *gin.Context) {
 	c.String(http.StatusCreated, fmt.Sprintf("%d tweet %s created", userID, tweetID))
 }
 
+// swagger:operation GET /user/{userID}/timeline Timeline
+// Get the user's timelines
+// ---
+// produces:
+// - application/json
+// parameters:
+//   - name: userID
+//     in: path
+//     description: The id of the user that is owner of the timeline
+//     required: true
+//     type: uint
+//
+// responses:
+//
+//	'200':
+//	    description: 'Timeline obtained'
 func timeline(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
